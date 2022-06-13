@@ -1,0 +1,9 @@
+{
+  "HOST": "http://localhost:8084/",
+  "REGISTRATION": "api/reg",
+  "LOGIN": "api/login",
+  "VALIDATE_LOGIN": "api/validate-login",
+  "REFRESH_LOGIN": "api/refresh-login",
+  "INVALIDATE_ACCESS": "api/invalidate-login",
+  "FETCH_USERNAME": "api/fetch-username"
+}

@@ -32,7 +32,7 @@ export default function GameSettings({
                                          setFillPercentage
                                      }: Props) {
     return (
-        <FormControl isDisabled={isActive} w="10vw" display="inline-block">
+        <FormControl isDisabled={isActive} display="inline-block">
             <FormLabel>Size</FormLabel>
             <InputGroup>
                 <NumberInput
@@ -60,7 +60,7 @@ export default function GameSettings({
                     </NumberInputStepper>
                 </NumberInput>
             </InputGroup>
-            <FormLabel>Fill Percentage</FormLabel>
+            <FormLabel mt={3}>Fill Percentage</FormLabel>
             <NumberInput
                 defaultValue={fillPercentage} min={0} max={1} step={0.05} allowMouseWheel
                 onChange={(str, fillPercentage) =>

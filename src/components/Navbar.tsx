@@ -9,11 +9,20 @@ import {
     MenuButton,
     MenuItem,
     MenuList,
+    Modal,
+    ModalBody,
+    ModalCloseButton,
+    ModalContent,
+    ModalHeader,
+    ModalOverlay,
     useDisclosure
 } from "@chakra-ui/react";
 import { ChevronDownIcon } from "@chakra-ui/icons";
 import SignInModal from "./SignInModal";
 import SignUpModal from "./SignUpModal";
+import { invalidateAccess } from "../util/requests";
+import useCookie from "react-use-cookie";
+import ProfileButton from "./ProfileButton";
 
 type Props = {
     isLoggedIn: boolean
@@ -22,9 +31,10 @@ type Props = {
 
 export default function Navbar({ isLoggedIn, settingsChild }: Props) {
 
-
     const { isOpen: isOpenSignIn, onOpen: onOpenSignIn, onClose: onCloseSignIn } = useDisclosure();
     const { isOpen: isOpenSignUp, onOpen: onOpenSignUp, onClose: onCloseSignUp } = useDisclosure();
+    const { isOpen: isOpenSettings, onOpen: onOpenSettings, onClose: onCloseSettings } = useDisclosure();
+    const [refreshToken,] = useCookie("refreshToken");
 
     return (<>
         <Grid templateColumns='repeat(3, 1fr)' gap="10vw">
@@ -40,28 +50,37 @@ export default function Navbar({ isLoggedIn, settingsChild }: Props) {
                                 Click</Kbd></MenuItem>
                         </MenuList>
                     </Menu>
-                    <Menu closeOnSelect={false}>
-                        <MenuButton _focus={{}} as={Button} rightIcon={<ChevronDownIcon/>}>
-                            Settings
-                        </MenuButton>
-                        <MenuList>
-                            <MenuItem _focus={{}}>{settingsChild}</MenuItem>
-                        </MenuList>
-                    </Menu>
+                    <Button _focus={{}} onClick={onOpenSettings}>
+                        Settings
+                    </Button>
                 </HStack>
             </GridItem>
             <GridItem>
                 <Heading>MINESWEEPER</Heading>
             </GridItem>
             <GridItem>
-                {(isLoggedIn && <Button>Log Out</Button>) ||
-                    <HStack>
+                {isLoggedIn
+                    ? <HStack>
+                        <ProfileButton/>
+                        <Button onClick={() => invalidateAccess(JSON.parse(refreshToken))}>Log Out</Button>
+                    </HStack>
+                    : <HStack>
                         <Button onClick={onOpenSignIn}>Sign In</Button>
                         <Button onClick={onOpenSignUp}>Sign Up</Button>
-                    </HStack>
-                }
+                    </HStack>}
             </GridItem>
         </Grid>
+
+        <Modal id="settingsModal" isOpen={isOpenSettings} onClose={onCloseSettings}>
+            <ModalOverlay/>
+            <ModalContent>
+                <ModalHeader>Game Settings</ModalHeader>
+                <ModalCloseButton/>
+                <ModalBody pb={4}>
+                    {settingsChild}
+                </ModalBody>
+            </ModalContent>
+        </Modal>
 
         <SignInModal isOpen={isOpenSignIn} onClose={onCloseSignIn}/>
 

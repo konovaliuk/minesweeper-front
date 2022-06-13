@@ -1,12 +1,12 @@
-import React, { Dispatch, SetStateAction, useState } from 'react';
+import React, { useState } from 'react';
 import './styles/App.css';
 import { Box, Text, VStack } from "@chakra-ui/react";
 import Field from "./components/Field";
 import GameSettings from "./components/GameSettings";
 import Navbar from "./components/Navbar";
 import GameState from "./components/GameState";
-
-const noAction = () => {};
+import useCookie from "react-use-cookie";
+import { refreshLogin, validateLogin } from "./util/requests";
 
 export default function App() {
     const [min, max] = [2, 30];
@@ -17,13 +17,29 @@ export default function App() {
     const [minesLeft, setMinesLeft] = useState(NaN);
     const [gameOver, setGameOver] = useState(false);
     const [victory, setVictory] = useState(false);
+    const [isLoggedIn, setLoggedIn] = useState(false);
 
-    const [restart, setRestart]: [() => void, Dispatch<SetStateAction<() => void>>] = useState(() => noAction);
+    const [accessToken, setAccessToken] = useCookie("accessToken");
+    const [refreshToken, setRefreshToken] = useCookie("accessToken");
+    const [stayLogged, ] = useCookie("stayLogged");
+
+    if (accessToken) validateLogin(JSON.parse(accessToken))
+        .then((isValid) => {
+            if (isValid) {
+                setLoggedIn(true);
+                return;
+            }
+            Boolean(stayLogged) && refreshLogin(JSON.parse(refreshToken)).then(({ at, rt }) => {
+                if (!at || !rt) return;
+                setAccessToken(JSON.stringify(at));
+                setRefreshToken(JSON.stringify(rt));
+            });
+        });
 
     return (<>
         <VStack>
             <Box mt={3}>
-                <Navbar isLoggedIn={false} settingsChild={
+                <Navbar isLoggedIn={isLoggedIn} settingsChild={
                     <GameSettings
                         width={width} height={height} min={min} max={max}
                         fillPercentage={fillPercentage} isActive={isActive}
@@ -32,7 +48,7 @@ export default function App() {
                     />
                 }/>
             </Box>
-            <GameState gameOver={gameOver} victory={victory} restart={restart}/>
+            <GameState gameOver={gameOver} victory={victory}/>
             <Text>Mines left: {isNaN(minesLeft) ? "?" : minesLeft}</Text>
             <Box display="inline-block">
                 <Field
@@ -43,7 +59,6 @@ export default function App() {
                     setMinesLeft={setMinesLeft}
                     setGameOver={setGameOver}
                     setVictory={setVictory}
-                    setRestart={setRestart}
                 />
             </Box>
         </VStack>

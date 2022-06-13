@@ -1,5 +1,5 @@
 import { Box, Center, HStack, VStack } from "@chakra-ui/react";
-import React, { Dispatch, SetStateAction, useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import Cell from "../types/Cell";
 import CellButton from "./CellButton";
 import Set from "../types/util/Set";
@@ -7,14 +7,13 @@ import Set from "../types/util/Set";
 type Props = {
     min: number
     max: number
-    isDisabled: boolean
     size: [number, number]
+    isDisabled: boolean
     fillPercentage: number
     setIsActive: (isActive: boolean) => void
     setMinesLeft: (minesLeft: number) => void
     setGameOver: (gameOver: boolean) => void
     setVictory: (victory: boolean) => void
-    setRestart: Dispatch<SetStateAction<() => void>>
 }
 
 export default function Field({
@@ -23,8 +22,7 @@ export default function Field({
                                   isDisabled,
                                   fillPercentage,
                                   setIsActive, setMinesLeft,
-                                  setGameOver, setVictory,
-                                  setRestart
+                                  setGameOver, setVictory
                               }: Props) {
     if (height < min || height > max || width < min || width > max) throw new Error("Invalid size");
     if (fillPercentage < 0 || fillPercentage > 1) throw new Error("Invalid fill percentage");
@@ -33,7 +31,7 @@ export default function Field({
         const cells = new Array<Cell[]>(height);
         for (let i = 0; i < height; i++) cells[i] = new Array<Cell>(width);
         return cells;
-    }
+    };
 
     const [cells, setCells] = useState<Cell[][]>(firstCells());
     useEffect(() => setCells(firstCells()), [width, height]);
@@ -49,7 +47,7 @@ export default function Field({
         for (let i_ = 0; i_ < height; i_++) {
             newCells[i_] = new Array<Cell>(width);
             for (let j_ = 0; j_ < width; j_++)
-                newCells[i_][j_] = new Cell(Math.random() < fillPercentage && !(i_ === i && j_ === j));
+                newCells[i_][j_] = new Cell(Math.random() < fillPercentage && !(i-1 <= i_ && i_ <= i+1 && j-1 <= j_ && j_ <= j+1));
         }
 
         setCells(discover([i, j], next([i, j], newCells), Set.empty(), newCells));
@@ -60,7 +58,7 @@ export default function Field({
             mines += newCells[i_][j_].isMined ? 1 : 0;
         setMinesLeft(mines);
         setMinesTotal(mines);
-    }
+    };
 
 
     const discover = ([i, j]: [number, number],
@@ -118,7 +116,7 @@ export default function Field({
             }
         }
         return neighbours;
-    }
+    };
 
 // works
     const numberOfMinedNeighbours = (i: number, j: number, field: Cell[][] = cells): number => {
@@ -139,7 +137,7 @@ export default function Field({
             }
         }
         setVictory(true);
-    }
+    };
 
     useEffect(testVictory, [cells]);
 
@@ -171,7 +169,7 @@ export default function Field({
         const res: null[] = []
         for (let i = 0; i < length; i++) res.push(null);
         return res;
-    }
+    };
 
     return (<>
         <Center>

@@ -11,6 +11,8 @@ import {
 import { useState } from "react";
 import { testEmail } from "../util/general";
 import { ViewIcon, ViewOffIcon } from "@chakra-ui/icons";
+import { sendRegister } from "../util/requests";
+import RegistrationDto from "../types/dto/RegistrationDto";
 
 type Props = {
     isOpen: boolean
@@ -27,8 +29,13 @@ export default function SignUpModal({isOpen, onClose}: Props) {
     const invalidEmail = !testEmail(email);
 
     const onClickSignUp = () => {
+        if (!(username.length >= 5 && !invalidEmail && password.length >= 6 && passwordRepeat === password)) return;
 
-    }
+        sendRegister(new RegistrationDto(username, email, password)).then(
+            response => console.log({ response }),
+            reason => console.log({ reason })
+        );
+    };
 
     return (
         <Modal id="signUpModal" isOpen={isOpen} onClose={onClose} closeOnOverlayClick={false}>
@@ -38,6 +45,7 @@ export default function SignUpModal({isOpen, onClose}: Props) {
                 <ModalCloseButton/>
                 <ModalBody>
                     <FormControl isInvalid={
+                        (username !== "" && username.length < 5) ||
                         (email !== "" && invalidEmail) ||
                         (password !== "" && password.length < 6) ||
                         (password !== "" && passwordRepeat !== password)
@@ -48,6 +56,11 @@ export default function SignUpModal({isOpen, onClose}: Props) {
                             value={username} placeholder="Username"
                             onChange={e => setUsername(e.target.value)}
                         />
+                        {
+                            username !== "" && username.length < 5
+                                ? <FormErrorMessage>Username is too short</FormErrorMessage>
+                                : ""
+                        }
 
                         <FormLabel mt={3} htmlFor="email">Email</FormLabel>
                         <Input
