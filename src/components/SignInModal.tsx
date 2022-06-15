@@ -23,16 +23,19 @@ import {
 import { ViewIcon, ViewOffIcon } from "@chakra-ui/icons";
 import { useState } from "react";
 import { testEmail } from "../util/general";
-import useCookie from "react-use-cookie";
+import useCookie, { updateItem } from "react-use-cookie";
 import LogInDto from "../types/dto/LogInDto";
 import { fetchUsername, refreshLogin, sendLogin } from "../util/requests";
 
 type Props = {
     isOpen: boolean
     onClose: () => void
+    setLoggedIn: (loggedIn: boolean) => void
+    setAccessToken: updateItem
+    setRefreshToken: updateItem
 }
 
-export default function SignInModal({ isOpen, onClose }: Props) {
+export default function SignInModal({ isOpen, onClose, setLoggedIn, setAccessToken, setRefreshToken }: Props) {
 
     const [variant, setVariant] = useState<"Email" | "Username">("Email");
     const [value, setValue] = useState("");
@@ -44,8 +47,6 @@ export default function SignInModal({ isOpen, onClose }: Props) {
     const invalidUsername: boolean = value.trim().length < 3;
 
     const [, setStayLoggedCookie] = useCookie("stayLogged");
-    const [, setAccessToken] = useCookie("accessToken");
-    const [, setRefreshToken] = useCookie("refreshToken");
     const [, setUsername] = useCookie("username");
 
     const onClickLogIn = () => {
@@ -57,36 +58,32 @@ export default function SignInModal({ isOpen, onClose }: Props) {
         };
         sendLogin(dto).then(
             ({ at, rt }) => {
-                setAccessToken(
-                    JSON.stringify(at),
-                    {
-                        days: 1,
-                        Secure: true
-                    }
-                );
+                setAccessToken(at, {
+                    days: 1,
+                    Secure: true
+                });
                 fetchUsername(at).then((username) => {
-                    username
-                        ? setUsername(username)
-                        : (stayLogged && refreshLogin(rt).then(({ at, rt }) => {
-                            setAccessToken(
-                                JSON.stringify(at),
-                                {
+                    if (username) setUsername(username);
+                    else {
+                        stayLogged && refreshLogin(rt).then(({ at, rt }) => {
+                            if (at && rt) {
+                                setAccessToken(at, {
                                     days: 1,
                                     Secure: true
-                                }
-                            );
-                            setRefreshToken(
-                                JSON.stringify(rt),
-                                {
+                                });
+                                setRefreshToken(rt, {
                                     days: 7,
                                     Secure: true
-                                }
-                            );
-                        }));
+                                });
+                            }
+                        });
+                    }
+                    onClose();
+                    setLoggedIn(true);
                 });
                 setStayLoggedCookie(String(stayLogged));
                 if (stayLogged) setRefreshToken(
-                    JSON.stringify(rt),
+                    rt,
                     {
                         days: 7,
                         Secure: true

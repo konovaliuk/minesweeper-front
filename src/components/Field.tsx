@@ -3,6 +3,7 @@ import React, { useEffect, useState } from "react";
 import Cell from "../types/Cell";
 import CellButton from "./CellButton";
 import Set from "../types/util/Set";
+import CellDto from "../types/dto/CellDto";
 
 type Props = {
     min: number
@@ -10,10 +11,9 @@ type Props = {
     size: [number, number]
     isDisabled: boolean
     fillPercentage: number
-    setIsActive: (isActive: boolean) => void
     setMinesLeft: (minesLeft: number) => void
-    setGameOver: (gameOver: boolean) => void
-    setVictory: (victory: boolean) => void
+    setGameState: (gameState: "IN_PROGRESS" | "WON" | "LOST") => void
+    setGetCells: (getter: () => () => CellDto[][]) => void
 }
 
 export default function Field({
@@ -21,8 +21,9 @@ export default function Field({
                                   size: [height, width],
                                   isDisabled,
                                   fillPercentage,
-                                  setIsActive, setMinesLeft,
-                                  setGameOver, setVictory
+                                  setMinesLeft,
+                                  setGameState,
+                                  setGetCells
                               }: Props) {
     if (height < min || height > max || width < min || width > max) throw new Error("Invalid size");
     if (fillPercentage < 0 || fillPercentage > 1) throw new Error("Invalid fill percentage");
@@ -47,11 +48,11 @@ export default function Field({
         for (let i_ = 0; i_ < height; i_++) {
             newCells[i_] = new Array<Cell>(width);
             for (let j_ = 0; j_ < width; j_++)
-                newCells[i_][j_] = new Cell(Math.random() < fillPercentage && !(i-1 <= i_ && i_ <= i+1 && j-1 <= j_ && j_ <= j+1));
+                newCells[i_][j_] = new Cell(Math.random() < fillPercentage && !(i - 1 <= i_ && i_ <= i + 1 && j - 1 <= j_ && j_ <= j + 1));
         }
 
         setCells(discover([i, j], next([i, j], newCells), Set.empty(), newCells));
-        setIsActive(true);
+        setGameState("IN_PROGRESS");
 
         let mines = 0;
         for (let i_ = 0; i_ < height; i_++) for (let j_ = 0; j_ < width; j_++)
@@ -136,7 +137,13 @@ export default function Field({
                 if (cells[i][j].isMined && !cells[i][j].isFlagged) return;
             }
         }
-        setVictory(true);
+        setGameState("WON");
+        setGetCells(() => () => cells.map((row, i) =>
+            row.map((cell, j) => ({
+                x: j, y: i,
+                ...cell
+            })))
+        );
     };
 
     useEffect(testVictory, [cells]);
@@ -154,7 +161,13 @@ export default function Field({
             if (cells[i][j].isFlagged) return;
             setCells(discover([i, j], next([i, j]), Set.empty(), cells));
             if (cells[i][j].isMined) {
-                setGameOver(true);
+                setGameState("LOST");
+                setGetCells(() => () => cells.map((row, i) =>
+                    row.map((cell, j) => ({
+                        x: j, y: i,
+                        ...cell
+                    })))
+                );
                 return;
             }
             return;
@@ -173,7 +186,7 @@ export default function Field({
 
     return (<>
         <Center>
-            <Box background={'#777'} padding='0.5em' borderRadius='0.5em'>
+            <Box background={'#777'} padding='0.5em' borderRadius='0.7em'>
                 <VStack>{cells.map((row, i) =>
                     <HStack key={`row_${i}`}>
                         {(wasLeftClicked ? row : nullArray(row.length)).map((cell: Cell | null, j) =>

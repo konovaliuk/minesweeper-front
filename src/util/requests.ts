@@ -1,92 +1,111 @@
 import RegistrationDto from "../types/dto/RegistrationDto";
 import LogInDto from "../types/dto/LogInDto";
 import endpoints from "../configs/endpoints.json";
+import constants from "../configs/constants.json";
 import { KJUR } from "jsrsasign";
-import { AccessToken, RefreshToken } from "../types/dto/token";
+import { RatingRecord } from "../components/Leaderboard";
+import { setCookie } from "react-use-cookie";
+import CellDto from "../types/dto/CellDto";
 
 export async function sendRegister(regDto: RegistrationDto): Promise<Response> {
-    const oHeader = { alg: 'HS256', typ: 'JWT' };
+    const oHeader = { alg: "HS256", typ: "JWT" };
     const sHeader = JSON.stringify(oHeader);
     const sPayload = JSON.stringify(regDto);
     const sJWT = KJUR.jws.JWS.sign("HS256", sHeader, sPayload, process.env.REACT_APP_JWT_SECRET)
 
     return await fetch(endpoints.HOST + endpoints.REGISTRATION, {
         method: "POST",
-        headers: { 'Content-Type': 'application/json' },
+        headers: { "Content-Type": "application/json" },
         body: sJWT
     });
 }
 
-export async function sendLogin(loginDto: LogInDto): Promise<{ at: AccessToken, rt: RefreshToken }> {
-    const oHeader = { alg: 'HS256', typ: 'JWT' };
+export async function sendLogin(loginDto: LogInDto): Promise<{ at: string, rt: string }> {
+    const oHeader = { alg: "HS256", typ: "JWT" };
     const sHeader = JSON.stringify(oHeader);
     const sPayload = JSON.stringify(loginDto);
     const sJWT = KJUR.jws.JWS.sign("HS256", sHeader, sPayload, process.env.REACT_APP_JWT_SECRET)
 
     return await fetch(endpoints.HOST + endpoints.LOGIN, {
         method: "POST",
-        headers: { 'Content-Type': 'application/json' },
+        headers: { "Content-Type": "application/json" },
         body: sJWT
     }).then(
-        (response) => response.json(),
-        (reason) => console.log({ reason })
+        async (response) => {
+            const res = await response.json();
+            console.log(res);
+            return res;
+        }
     );
 }
 
-export async function validateLogin(accessToken: AccessToken): Promise<boolean> {
-    const oHeader = { alg: 'HS256', typ: 'JWT' };
-    const sHeader = JSON.stringify(oHeader);
-    const sPayload = JSON.stringify(accessToken);
-    const sJWT = KJUR.jws.JWS.sign("HS256", sHeader, sPayload, process.env.REACT_APP_JWT_SECRET)
-
-    return await fetch(endpoints.HOST + endpoints.VALIDATE_LOGIN, {
-        method: "GET",
-        headers: { 'Content-Type': 'application/json' },
-        body: sJWT
+export async function validateLogin(accessToken: string): Promise<boolean> {
+    return await fetch(`${endpoints.HOST}${endpoints.VALIDATE_LOGIN}?at=${accessToken}`, {
+        method: "GET"
     }).then(
-        (response) => response.json(),
-        (reason) => console.log({ reason })
+        async (response) => await response.json()
     );
 }
 
-export async function refreshLogin(refreshToken: RefreshToken): Promise<{ at?: AccessToken, rt?: RefreshToken }> {
-    const oHeader = { alg: 'HS256', typ: 'JWT' };
-    const sHeader = JSON.stringify(oHeader);
-    const sPayload = JSON.stringify(refreshToken);
-    const sJWT = KJUR.jws.JWS.sign("HS256", sHeader, sPayload, process.env.REACT_APP_JWT_SECRET)
-
+export async function refreshLogin(refreshToken: string): Promise<{ at?: string, rt?: string }> {
     return await fetch(endpoints.HOST + endpoints.REFRESH_LOGIN, {
         method: "POST",
-        headers: { 'Content-Type': 'application/json' },
-        body: sJWT
+        headers: { "Content-Type": "application/json" },
+        body: refreshToken
     }).then(
-        (response) => response.json(),
-        (reason) => console.log({ reason })
+        async (response) => {
+            const res = await response.json();
+            console.log(res);
+            return res
+        }
     );
 }
 
-export async function invalidateAccess(refreshToken: RefreshToken): Promise<void> {
-    const oHeader = { alg: 'HS256', typ: 'JWT' };
-    const sHeader = JSON.stringify(oHeader);
-    const sPayload = JSON.stringify(refreshToken);
-    const sJWT = KJUR.jws.JWS.sign("HS256", sHeader, sPayload, process.env.REACT_APP_JWT_SECRET)
-
+export async function invalidateAccess(accessToken: string): Promise<void> {
     return await fetch(endpoints.HOST + endpoints.INVALIDATE_ACCESS, {
-        method: "POST",
-        headers: { 'Content-Type': 'application/json' },
-        body: sJWT
-    }).then();
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: accessToken
+    }).then((_resp) => {
+        setCookie("accessToken", "");
+        setCookie("refreshToken", "");
+    });
 }
 
-export async function fetchUsername(accessToken: AccessToken): Promise<string | undefined> {
-    const oHeader = { alg: 'HS256', typ: 'JWT' };
-    const sHeader = JSON.stringify(oHeader);
-    const sPayload = JSON.stringify(accessToken);
-    const sJWT = KJUR.jws.JWS.sign("HS256", sHeader, sPayload, process.env.REACT_APP_JWT_SECRET)
+export async function fetchUsername(accessToken: string): Promise<string | undefined> {
+    return await fetch(endpoints.HOST + endpoints.FETCH_USERNAME + `?at=${accessToken}`, {
+        method: "GET"
+    }).then((response) => response.text());
+}
 
-    return await fetch(endpoints.HOST + endpoints.FETCH_USERNAME, {
-        method: "GET",
-        headers: { 'Content-Type': 'application/json' },
-        body: sJWT
+export async function fetchTotalUsers(): Promise<number> {
+    return await fetch(endpoints.HOST + endpoints.TOTAL_USERS, {
+        method: "GET"
+    }).then((response) => Number(response.json()));
+}
+
+export async function fetchRatingPage(page: number): Promise<RatingRecord[]> {
+    return await fetch(endpoints.HOST + endpoints.RATING_PAGE + `?page=${page}&pageSize=${constants.RATING_PAGE_SIZE}`, {
+        method: "GET"
     }).then((response) => response.json());
+}
+
+export async function fetchUserRating(username: string): Promise<RatingRecord> {
+    return await fetch(endpoints.HOST + endpoints.USER_RATING + `?username=${username}`, {
+        method: "GET"
+    }).then(async (response) => await response.json());
+}
+
+export async function sendGameResult(accessToken: string,
+                                     game: {
+                                         gameState: "WON" | "LOST",
+                                         cells: CellDto[][],
+                                         width: number,
+                                         height: number
+                                     }): Promise<Response> {
+    return await fetch(endpoints.HOST + endpoints.SAVE_GAME, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ accessToken, game })
+    });
 }

@@ -1,12 +1,22 @@
 import {
     Button,
-    FormControl, FormErrorMessage, FormHelperText, FormLabel, HStack, IconButton, Input, InputGroup, InputRightElement,
+    FormControl,
+    FormErrorMessage,
+    FormHelperText,
+    FormLabel,
+    HStack,
+    IconButton,
+    Input,
+    InputGroup,
+    InputRightElement,
     Modal,
     ModalBody,
     ModalCloseButton,
-    ModalContent, ModalFooter,
+    ModalContent,
+    ModalFooter,
     ModalHeader,
-    ModalOverlay
+    ModalOverlay,
+    useToast
 } from "@chakra-ui/react";
 import { useState } from "react";
 import { testEmail } from "../util/general";
@@ -19,7 +29,9 @@ type Props = {
     onClose: () => void
 }
 
-export default function SignUpModal({isOpen, onClose}: Props) {
+export default function SignUpModal({ isOpen, onClose }: Props) {
+    const toast = useToast({ isClosable: true });
+
     const [username, setUsername] = useState("");
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
@@ -32,8 +44,26 @@ export default function SignUpModal({isOpen, onClose}: Props) {
         if (!(username.length >= 5 && !invalidEmail && password.length >= 6 && passwordRepeat === password)) return;
 
         sendRegister(new RegistrationDto(username, email, password)).then(
-            response => console.log({ response }),
-            reason => console.log({ reason })
+            response => {
+                console.log(response);
+                if (response.status === 201) {
+                    onClose();
+                    toast({
+                        status: "success",
+                        title: "Successfully registered!"
+                    });
+                } else response.json().then((json) => toast({
+                    status: "error",
+                    title: json.message
+                }));
+            },
+            reason => {
+                console.log(reason);
+                toast({
+                    status: "error",
+                    title: "Something went wrong"
+                })
+            }
         );
     };
 

@@ -5,5 +5,9 @@
   "VALIDATE_LOGIN": "api/validate-login",
   "REFRESH_LOGIN": "api/refresh-login",
   "INVALIDATE_ACCESS": "api/invalidate-login",
-  "FETCH_USERNAME": "api/fetch-username"
+  "FETCH_USERNAME": "api/username",
+  "TOTAL_USERS": "api/total-users",
+  "RATING_PAGE": "api/rating-page",
+  "USER_RATING": "api/user-rating",
+  "SAVE_GAME": "api/save-game-result"
 }

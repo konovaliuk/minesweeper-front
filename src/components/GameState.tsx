@@ -1,19 +1,18 @@
 import { Box, Button, Heading, HStack } from "@chakra-ui/react";
 
 type Props = {
-    gameOver: boolean
-    victory: boolean
+    gameState?: "IN_PROGRESS" | "WON" | "LOST"
 }
 
-export default function GameState({ gameOver, victory }: Props) {
+export default function GameState({ gameState }: Props) {
     const restart = () => window.location.reload();
 
     return (<>{
-        (gameOver && <HStack>
+        (gameState === "LOST" && <HStack>
             <Heading textColor="red">Game Over</Heading>
             <Button onClick={restart}>Restart</Button>
         </HStack>) ||
-        (victory && <HStack>
+        (gameState === "WON" && <HStack>
             <Heading textColor="rgb(0, 200, 0)">Victory!</Heading>
             <Button onClick={restart}>Restart</Button>
         </HStack>) ||
